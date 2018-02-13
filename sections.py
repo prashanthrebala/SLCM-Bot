@@ -22,21 +22,25 @@ def bunks_to_seventy_five(a, b):
     return str(ans) + " classes"
 
 
-def perform_action(driver, current_tab, command):
+def perform_action(user, command):
     command = str(command)
-    # if command == current_tab or command.isdigit():
-    return process_tab_action(driver, command), current_tab
-
-
-def process_tab_action(driver, command):
     if command in tabs:
-        return tabs[command](driver)
-    return 'Please enter a valid command'
+        r = tabs[command](user)
+        print r
+        return r
+    elif command.isdigit():
+        try:
+            return user.temporary_utils[user.current_tab][int(command)]
+        except Exception as err:
+            print err, "in perform action"
+            pass
+    print "not command and not digit"
+    return "Please enter a valid command"
 
 
-def go_to_academics(driver):
-    if str(driver.current_url) != "http://slcm.manipal.edu/Academics.aspx":
-        driver.get("http://slcm.manipal.edu/Academics.aspx")
+def go_to_academics(user):
+    if str(user.driver.current_url) != "http://slcm.manipal.edu/Academics.aspx":
+        user.driver.get("http://slcm.manipal.edu/Academics.aspx")
         time.sleep(1)
     return
 
@@ -72,13 +76,17 @@ def go_to_basic_details(driver):
     return basic_details
 
 
-def attendance(driver):
-    go_to_academics(driver)
-    return get_attendance(driver)
+def attendance(user):
+    user.current_tab = "attendance"
+    if "attendance" not in user.temporary_utils:
+        go_to_academics(user)
+        get_attendance(user)
+    print user.temporary_utils["attendance"]["menu"]
+    return user.temporary_utils["attendance"]["menu"]
 
 
-def get_attendance(driver):
-    page_source = bs(driver.page_source, "html.parser")
+def get_attendance(user):
+    page_source = bs(user.driver.page_source, "html.parser")
     table = page_source.find_all('tbody')[1]
     attendance_map = {}
     command = ""
@@ -96,7 +104,10 @@ def get_attendance(driver):
                " while maintaining 75%" + "\n\n"
         attendance_map[index] = ans
         command += "/" + str(index) + " " + sub + "\n"
-    return command
+    attendance_map["menu"] = command
+    user.temporary_utils["attendance"] = attendance_map
+    print user.temporary_utils["attendance"]
+    return user
 
 
 def logout(driver):

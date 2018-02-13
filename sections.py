@@ -25,9 +25,7 @@ def bunks_to_seventy_five(a, b):
 def perform_action(user, command):
     command = str(command)
     if command in tabs:
-        r = tabs[command](user)
-        print r
-        return r
+        return tabs[command](user)
     elif command.isdigit():
         try:
             return user.temporary_utils[user.current_tab][int(command)]
@@ -81,7 +79,6 @@ def attendance(user):
     if "attendance" not in user.temporary_utils:
         go_to_academics(user)
         get_attendance(user)
-    print user.temporary_utils["attendance"]["menu"]
     return user.temporary_utils["attendance"]["menu"]
 
 
@@ -90,10 +87,10 @@ def get_attendance(user):
     table = page_source.find_all('tbody')[1]
     attendance_map = {}
     command = ""
-    index = 0
+    index = 1
+    all = ""
     for subject in table.find_all('tr'):
         cells = subject.find_all('td')
-        index += 1
         sub = string_utils.pascal_case(cells[2].string)
         ans = ""
         ans += sub + "\n"
@@ -102,11 +99,15 @@ def get_attendance(user):
         ans += "Percentage: " + cells[7].string + "\n"
         ans += "You can bunk " + bunks_to_seventy_five(cells[5].string, cells[4].string) + \
                " while maintaining 75%" + "\n\n"
+        if sub[-3:] != "Lab":
+            all += ans
         attendance_map[index] = ans
         command += "/" + str(index) + " " + sub + "\n"
+        index += 1
+    command += "/" + str(index) + " " + "All subjects" + "\n"
+    attendance_map[index] = all
     attendance_map["menu"] = command
     user.temporary_utils["attendance"] = attendance_map
-    print user.temporary_utils["attendance"]
     return user
 
 

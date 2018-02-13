@@ -34,6 +34,12 @@ def process_tab_action(driver, command):
     return 'Please enter a valid command'
 
 
+def go_to_academics(driver):
+    driver.get("http://slcm.manipal.edu/Academics.aspx")
+    time.sleep(1)
+    return
+
+
 def timetable(driver):
     print "here"
     go_to_timetable(driver)
@@ -68,8 +74,6 @@ def go_to_basic_details(driver):
 def attendance(driver):
     driver.get("http://slcm.manipal.edu/Academics.aspx")
     time.sleep(1)
-    driver.execute_script("document.querySelectorAll(\"[href='#3']\")[0].click()")
-    time.sleep(1)
     return get_attendance(driver)
 
 
@@ -93,8 +97,9 @@ def logout(driver):
     driver.close()
 
 
-def go_to_marks(driver):
-    print 'yolo'
+def marks(driver):
+    go_to_academics(driver)
+    driver.execute_script("document.querySelectorAll(\"[href='#4']\")[0].click()")
 
 
 def go_to_course_details(driver):

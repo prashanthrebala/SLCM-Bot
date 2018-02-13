@@ -9,7 +9,7 @@ import urllib
 
 TOKEN = '441669105:AAH3Brfz_jw0np86aPv7AKgPzOA6kzkb4fs'
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
-USER = None
+USERS = {}
 
 
 def get_url(url):
@@ -46,19 +46,40 @@ def send_message(chat_id, text):
 
 
 def echo_all(updates):
-    global USER
+    global USERS
     for update in updates["result"]:
         try:
-            chat = update["message"]["chat"]["id"]
+            reply = None
+            chat_id = update["message"]["chat"]["id"]
+            if chat_id not in USERS:
+                send_message(chat_id, "Hi! This is SLCM Bot.")
+                USERS[chat_id] = User()
+            current_user = USERS[chat_id]
+            if current_user.current_tab == "new user":
+                current_user.current_tab = "asked for username"
+                send_message(chat_id, 'Enter your username.')
+                continue
             if 'text' not in update["message"]:
-                send_message(chat, 'Please enter a valid command')
+                send_message(chat_id, 'Please enter a valid command')
                 continue
             text = update["message"]["text"]
-            reply = message_handler.handle(text, USER)
-            if isinstance(reply, tuple):
-                USER = reply[1]
-                reply = reply[0]
-            send_message(chat, reply)
+            if current_user.current_tab == "asked for username":
+                current_user.username = text
+                current_user.current_tab = "asked for password"
+                send_message(chat_id, 'Enter your SLCM password. \n(The bot can\'t view it)')
+                continue
+            if current_user.current_tab == "asked for password":
+                current_user.password = text
+                current_user.logged_in = False
+                reply = "..."
+                send_message(chat_id, 'Please delete your password for your own privacy.')
+            if not current_user.logged_in:
+                send_message(chat_id, 'Please wait while we are logging you in...')
+                send_message(chat_id, current_user.begin_session())
+            if reply is None:
+                beer = u'\U0001F37A'
+                reply = message_handler.handle(text, current_user) + "\n\n" + beer
+                send_message(chat_id, urllib.quote_plus(reply.encode("utf8")))
         except Exception as err:
             print err
 

@@ -36,9 +36,19 @@ def perform_action(user, command):
     return "Please enter a valid command"
 
 
+""" PAGE NAVIGATION """
+
+
 def go_to_academics(user):
     if str(user.driver.current_url) != "http://slcm.manipal.edu/Academics.aspx":
         user.driver.get("http://slcm.manipal.edu/Academics.aspx")
+        time.sleep(1)
+    return
+
+
+def go_to_grade_sheets(user):
+    if str(user.driver.current_url) != "http://slcm.manipal.edu/GradeSheet.aspx":
+        user.driver.get("http://slcm.manipal.edu/GradeSheet.aspx")
         time.sleep(1)
     return
 
@@ -72,6 +82,9 @@ def go_to_basic_details(driver):
         else:
             previous_key = element.string
     return basic_details
+
+
+""" ATTENDANCE """
 
 
 def attendance(user):
@@ -111,14 +124,23 @@ def get_attendance(user):
     return user
 
 
-def logout(driver):
-    driver.find_element_by_xpath("//a[@href='loginForm.aspx']").click()
-    driver.close()
+""" GRADESHEETS """
 
 
-def marks(driver):
+def gradesheet(user):
+    user.current_tab = "gradesheet"
+
+
+def logout(user):
+    # user.current_tab = "logout"
+    # user.temporary_utils["logout"]["menu"] = "Are you sure you want to log out?\n/1 Yes\n/2 No\n"
+    # user.end_session()
+    print "lol it does nothing yet"
+
+
+def marks(user):
+    user.current_tab = "marks"
     go_to_academics(driver)
-    driver.execute_script("document.querySelectorAll(\"[href='#4']\")[0].click()")
 
 
 def go_to_course_details(driver):
@@ -130,11 +152,6 @@ def go_to_course_details(driver):
 
 def go_to_timetable(driver):
     driver.get("http://slcm.manipal.edu/StudentTimeTable.aspx")
-    time.sleep(1)
-
-
-def go_to_grade_sheet(driver):
-    driver.get("http://slcm.manipal.edu/GradeSheet.aspx")
     time.sleep(1)
 
 
@@ -197,8 +214,8 @@ tabs = {
 
         'attendance': attendance,
         # 'marks': marks
-        'timetable': timetable,
-        'logout': logout
-        # 'gradesheet': gradesheet
+        # 'timetable': timetable,
+        # 'logout': logout
+        'gradesheet': gradesheet
 
     }

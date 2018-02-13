@@ -57,3 +57,13 @@ class User:
         else:
             self.driver.refresh()
             Timer(300.0, self.close_driver).start()
+
+    def end_session(self):
+        self.driver = None
+        self.username = None
+        self.password = None
+        self.last_time_stamp = None
+        self.logged_in = False
+        self.current_tab = "new user"
+        self.temporary_utils = {}
+        self.driver.close()

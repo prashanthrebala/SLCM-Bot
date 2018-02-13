@@ -28,4 +28,19 @@ else:
 # print 'logged in'
 # time.sleep(5)
 
+"""
+from telepot.loop import MessageLoop
+import telepot
 
+
+def handle(msg):
+    telepot.glance(msg)
+    print msg['text']
+
+
+def flush():
+    bot = telepot.Bot('441669105:AAH3Brfz_jw0np86aPv7AKgPzOA6kzkb4fs')
+    MessageLoop(bot, handle).run_as_thread()
+    
+shounak: 432450177
+"""

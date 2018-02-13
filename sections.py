@@ -35,8 +35,9 @@ def process_tab_action(driver, command):
 
 
 def go_to_academics(driver):
-    driver.get("http://slcm.manipal.edu/Academics.aspx")
-    time.sleep(1)
+    if str(driver.current_url) != "http://slcm.manipal.edu/Academics.aspx":
+        driver.get("http://slcm.manipal.edu/Academics.aspx")
+        time.sleep(1)
     return
 
 
@@ -72,24 +73,30 @@ def go_to_basic_details(driver):
 
 
 def attendance(driver):
-    driver.get("http://slcm.manipal.edu/Academics.aspx")
-    time.sleep(1)
+    go_to_academics(driver)
     return get_attendance(driver)
 
 
 def get_attendance(driver):
     page_source = bs(driver.page_source, "html.parser")
     table = page_source.find_all('tbody')[1]
-    ans = ""
+    attendance_map = {}
+    command = ""
+    index = 0
     for subject in table.find_all('tr'):
         cells = subject.find_all('td')
-        ans += string_utils.pascal_case(cells[2].string) + "\n"
+        index += 1
+        sub = string_utils.pascal_case(cells[2].string)
+        ans = ""
+        ans += sub + "\n"
         ans += "Attended: " + cells[5].string + "\n"
         ans += "Bunked: " + cells[6].string + "\n"
         ans += "Percentage: " + cells[7].string + "\n"
         ans += "You can bunk " + bunks_to_seventy_five(cells[5].string, cells[4].string) + \
-               " while maintaining 75%" + "\n\n\n"
-    return ans
+               " while maintaining 75%" + "\n\n"
+        attendance_map[index] = ans
+        command += "/" + str(index) + " " + sub + "\n"
+    return command
 
 
 def logout(driver):

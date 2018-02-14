@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup as bs
 import time
 import re
 import string_utils
+from pprint import pprint
 
 subject_code = re.compile('[A-Z]{3} [0-9]{4}')
 
@@ -24,11 +25,14 @@ def bunks_to_seventy_five(a, b):
 
 def perform_action(user, command):
     command = str(command)
+    print command.isdigit()
     if command in tabs:
         return tabs[command](user)
     elif command.isdigit():
         try:
-            return user.temporary_utils[user.current_tab][int(command)]
+            # return user.temporary_utils[user.current_tab][int(command)]
+            print "in perform action"
+            return tabs[user.current_tab](user, command)
         except Exception as err:
             print err, "in perform action"
             pass
@@ -46,9 +50,9 @@ def go_to_academics(user):
     return
 
 
-def go_to_grade_sheets(user):
-    if str(user.driver.current_url) != "http://slcm.manipal.edu/GradeSheet.aspx":
-        user.driver.get("http://slcm.manipal.edu/GradeSheet.aspx")
+def go_to_grade_sheets(driver):
+    if str(driver.current_url) != "http://slcm.manipal.edu/GradeSheet.aspx":
+        driver.get("http://slcm.manipal.edu/GradeSheet.aspx")
         time.sleep(1)
     return
 
@@ -87,12 +91,16 @@ def go_to_basic_details(driver):
 """ ATTENDANCE """
 
 
-def attendance(user):
+def attendance(user, command=None):
     user.current_tab = "attendance"
     if "attendance" not in user.temporary_utils:
         go_to_academics(user)
         get_attendance(user)
-    return user.temporary_utils["attendance"]["menu"]
+    if command is None:
+        return user.temporary_utils["attendance"]["menu"]
+    else:
+        print "here in attendance"
+        return user.temporary_utils["attendance"][int(command)]
 
 
 def get_attendance(user):
@@ -127,8 +135,65 @@ def get_attendance(user):
 """ GRADESHEETS """
 
 
-def gradesheet(user):
+def gradesheet(user, command=None):
     user.current_tab = "gradesheet"
+    go_to_grade_sheets(user.driver)
+    if "gradesheet" in user.temporary_utils:
+        if command is None:
+            return user.temporary_utils["gradesheet"]["menu"]
+        elif int(command) in user.temporary_utils["gradesheet"]:
+            return user.temporary_utils["gradesheet"][int(command)]
+    else:
+        user.temporary_utils["gradesheet"] = {}
+    total_sems = 0
+    if command is not None:
+        total_sems = change_grade_sheet_semester(user, command)
+    else:
+        total_sems = change_grade_sheet_semester(user, 0)
+    soup = bs(user.driver.page_source, "html.parser")
+    table = soup.find("tbody")
+    subjects = table.find_all("tr")[1:]
+    gpa = soup.find("span", {"id": "ContentPlaceHolder1_lblGPA"}).string
+    cgpa = soup.find("span", {"id": "ContentPlaceHolder1_lblCGPA"}).string
+    ans = ""
+    ans += "CGPA: " + str(cgpa) + "\n"
+    ans += "GPA: " + str(gpa) + "\n"
+    for sub in subjects:
+        x = sub.find_all("td")[2:4]
+        name, grade = x[0].span.string, x[1].span.string
+        ans += string_utils.pascal_case(str(name)) + ": " + str(grade) + "\n"
+
+    if "menu" not in user.temporary_utils["gradesheet"]:
+        menu = ""
+        for n in range(1, total_sems + 1):
+            menu += "/" + str(n) + " Semester " + roman[n] + "\n"
+        user.temporary_utils["gradesheet"]["menu"] = menu
+
+    current_sem = total_sems
+    if command is not None:
+        current_sem = int(command)
+    ans = "Semester " + str(roman[current_sem]) + "\n" + ans
+    user.temporary_utils["gradesheet"][current_sem] = ans
+    if command is None:
+        ans += ":::" + user.temporary_utils["gradesheet"]["menu"]
+    print "went all the way lol"
+    return ans
+
+
+def change_grade_sheet_semester(user, value):
+    drop_down = user.driver.find_element_by_xpath("//select[@id='ContentPlaceHolder1_ddlSemester']")
+    list_elements = 0
+    options = drop_down.find_elements_by_tag_name("option")
+    for option in options:
+        if option.get_attribute('value') not in "IVIII":
+            continue
+        list_elements += 1
+    for option in options:
+        if value != 0 and option.get_attribute('value') == roman[int(value)]:
+            option.click()
+            time.sleep(1)
+            break
+    return list_elements
 
 
 def logout(user):

@@ -114,7 +114,7 @@ def get_attendance(user):
         cells = subject.find_all('td')
         sub = string_utils.pascal_case(cells[2].string)
         ans = ""
-        ans += sub + "\n"
+        ans += "*" + sub + "*\n"
         ans += "Attended: " + cells[5].string + "\n"
         ans += "Bunked: " + cells[6].string + "\n"
         ans += "Percentage: " + cells[7].string + "\n"
@@ -145,9 +145,10 @@ def gradesheet(user, command=None):
             return user.temporary_utils["gradesheet"][int(command)]
     else:
         user.temporary_utils["gradesheet"] = {}
-    total_sems = 0
     if command is not None:
         total_sems = change_grade_sheet_semester(user, command)
+        if int(command) > total_sems:
+            return "Please enter a valid command"
     else:
         total_sems = change_grade_sheet_semester(user, 0)
     soup = bs(user.driver.page_source, "html.parser")
@@ -156,12 +157,12 @@ def gradesheet(user, command=None):
     gpa = soup.find("span", {"id": "ContentPlaceHolder1_lblGPA"}).string
     cgpa = soup.find("span", {"id": "ContentPlaceHolder1_lblCGPA"}).string
     ans = ""
-    ans += "CGPA: " + str(cgpa) + "\n"
-    ans += "GPA: " + str(gpa) + "\n"
+    ans += "CGPA: *" + str(cgpa) + "*\n"
+    ans += "GPA: *" + str(gpa) + "*\n"
     for sub in subjects:
         x = sub.find_all("td")[2:4]
         name, grade = x[0].span.string, x[1].span.string
-        ans += string_utils.pascal_case(str(name)) + ": " + str(grade) + "\n"
+        ans += string_utils.pascal_case(str(name)) + ": *" + str(grade) + "*\n"
 
     if "menu" not in user.temporary_utils["gradesheet"]:
         menu = ""

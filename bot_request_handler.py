@@ -42,7 +42,7 @@ def get_last_update_id(updates):
 
 def send_message(chat_id, text):
     text = text.encode('utf8')
-    url = URL + "sendMessage?text={}&chat_id={}".format(text, chat_id)
+    url = URL + "sendMessage?text={}&chat_id={}&parse_mode=markdown".format(text, chat_id)
     get_url(url)
 
 

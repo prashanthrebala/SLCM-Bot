@@ -1,6 +1,4 @@
 from time import sleep
-from pprint import pprint
-from scraper import User
 
 
 def handle(msg, current_user):

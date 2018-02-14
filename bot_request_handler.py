@@ -1,5 +1,5 @@
 from pprint import pprint
-from scraper import User
+from user import User
 
 import json
 import requests

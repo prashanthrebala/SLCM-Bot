@@ -4,8 +4,6 @@ import re
 import string_utils
 from pprint import pprint
 
-subject_code = re.compile('[A-Z]{3} [0-9]{4}')
-
 days = {0: 'Monday', 1: 'Tuesday', 2: 'Wednesday', 3: 'Thursday', 4: 'Friday', 5: 'Saturday', 6: 'Sunday',
         'Monday': 0, 'Tuesday': 1, 'Wednesday': 2, 'Thursday': 3, 'Friday': 4, 'Saturday': 5, 'Sunday': 6}
 
@@ -21,6 +19,11 @@ def bunks_to_seventy_five(a, b):
     if ans == 1:
         return "1 class"
     return str(ans) + " classes"
+
+
+def v(string):
+    f = float(string)
+    return str(int(f)) if f == int(f) else str(f)
 
 
 def perform_action(user, command):
@@ -43,9 +46,9 @@ def perform_action(user, command):
 """ PAGE NAVIGATION """
 
 
-def go_to_academics(user):
-    if str(user.driver.current_url) != "http://slcm.manipal.edu/Academics.aspx":
-        user.driver.get("http://slcm.manipal.edu/Academics.aspx")
+def go_to_academics(driver):
+    if str(driver.current_url) != "http://slcm.manipal.edu/Academics.aspx":
+        driver.get("http://slcm.manipal.edu/Academics.aspx")
         time.sleep(1)
     return
 
@@ -94,7 +97,7 @@ def go_to_basic_details(driver):
 def attendance(user, command=None):
     user.current_tab = "attendance"
     if "attendance" not in user.temporary_utils:
-        go_to_academics(user)
+        go_to_academics(user.driver)
         get_attendance(user)
     if command is None:
         return user.temporary_utils["attendance"]["menu"]
@@ -197,16 +200,85 @@ def change_grade_sheet_semester(user, value):
     return list_elements
 
 
+""" MARKS """
+
+
+def marks(user, command=None):
+    user.current_tab = "marks"
+    if "marks" not in user.temporary_utils:
+        go_to_academics(user.driver)
+        scrape_marks(user)
+    if command is None:
+        return user.temporary_utils["marks"]["menu"]
+    else:
+        return user.temporary_utils["marks"][int(command)]
+
+
+def scrape_marks(user):
+    marks_map = {}
+    soup = bs(user.driver.page_source, "html.parser")
+    divs = soup.find("div", {"class": "panel-group internalMarks"}).find_all("div", {"class": "panel panel-default"})
+    menu = ""
+    sessional1 = ""
+    sessional2 = ""
+    sessional1_score = 0
+    sessional1_total = 0
+    sessional2_score = 0
+    sessional2_total = 0
+    index = 1
+    for subject in divs:
+        subject_name = string_utils.pascal_case(string_utils.extract_subject_name(subject.h4.text))
+        if " Lab" == subject_name[-4:]:
+            continue
+        s1 = 0.0
+        s2 = 0.0
+        am = 0.0
+        ans = "*" + subject_name + "*\n"
+        tables = subject.find_all("tbody")
+        for table in tables:
+            rows = table.find_all("tr")
+            if str(rows[0].th.string) == "Internal":
+                for row in rows[1:-1]:
+                    cols = row.find_all("td")
+                    if "Sessional 1" in str(cols[0].string):
+                        ans += "Sessional 1: " + v(cols[2].string) + " / " + v(cols[1].string) + "\n"
+                        s1 += float(cols[2].string)
+                        sessional1_score += float(cols[2].string)
+                        sessional1_total += float(cols[1].string)
+                        sessional1 += subject_name + ": " + v(cols[2].string) + " / " + v(cols[1].string) + "\n"
+                    elif "Sessional 2" in str(cols[0].string):
+                        ans += "Sessional 2: " + v(cols[2].string) + " / " + v(cols[1].string) + "\n"
+                        s2 += float(cols[2].string)
+                        sessional2_score += float(cols[2].string)
+                        sessional2_total += float(cols[1].string)
+                        sessional2 += subject_name + ": " + v(cols[2].string) + " / " + v(cols[1].string) + "\n"
+            elif str(rows[0].th.string) == "Assignment":
+                for row in rows[1:-1]:
+                    cols = row.find_all("td")
+                    ans += str(cols[0].string) + ": " + v(cols[2].string) + " / " + v(cols[1].string) + "\n"
+                    am += float(cols[2].string)
+        ans += "Total: " + str(s1 + s2 + am) + "\n"
+        marks_map[index] = ans
+        menu += "/" + str(index) + " " + subject_name + "\n"
+        index += 1
+    if sessional1_total != 0:
+        marks_map[index] = sessional1
+        menu += "/" + str(index) + " Sessional 1\n"
+        index += 1
+    if sessional2_total != 0:
+        marks_map[index] = sessional2
+        menu += "/" + str(index) + " Sessional 2\n"
+        index += 1
+    marks_map["menu"] = menu
+    user.temporary_utils["marks"] = marks_map
+
+
+
 def logout(user):
     # user.current_tab = "logout"
     # user.temporary_utils["logout"]["menu"] = "Are you sure you want to log out?\n/1 Yes\n/2 No\n"
     # user.end_session()
     print "lol it does nothing yet"
-
-
-def marks(user):
-    user.current_tab = "marks"
-    go_to_academics(driver)
 
 
 def go_to_course_details(driver):
@@ -279,7 +351,7 @@ def get_grade_details(driver, n):
 tabs = {
 
         'attendance': attendance,
-        # 'marks': marks
+        'marks': marks,
         # 'timetable': timetable,
         # 'logout': logout
         'gradesheet': gradesheet

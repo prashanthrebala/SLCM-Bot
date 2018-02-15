@@ -1,7 +1,9 @@
+from string import lowercase as atoz
 import re
 
 SUBJECT_CODE = re.compile("[A-Z]{3} [0-9]{4}")
 drop = "&-IVIII"
+
 
 
 def levenshtein(str1, str2):
@@ -61,6 +63,28 @@ def best_match(subject_list, token_to_match):
 
 def extract_subject_name(string):
     return string.split(SUBJECT_CODE.findall(str(string))[0])[-1].strip()
+
+
+def subject_title(string):
+    string = str(string).lower()
+    if "open elective" in string:
+        string = string.replace("open elective", "")
+    string = string.split(":")[0]
+    string = drop_non_alphabets(string)
+    return pascal_case(string)
+
+
+def drop_non_alphabets(string):
+    x, y = 0, len(string) - 1
+    try:
+        while string[x] not in atoz:
+            x += 1
+        while string[y] not in atoz:
+            y -= 1
+        return string[x:y+1]
+    except Exception:
+        return ""
+
 
 # levenshtein("1234", "1234567")
 

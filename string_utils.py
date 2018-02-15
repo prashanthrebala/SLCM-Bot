@@ -1,4 +1,6 @@
+import re
 
+SUBJECT_CODE = re.compile("[A-Z]{3} [0-9]{4}")
 drop = "&-IVIII"
 
 
@@ -56,6 +58,9 @@ def best_match(subject_list, token_to_match):
 
     return []
 
+
+def extract_subject_name(string):
+    return string.split(SUBJECT_CODE.findall(str(string))[0])[-1].strip()
 
 # levenshtein("1234", "1234567")
 

@@ -36,13 +36,13 @@ class User:
         if successfully_logged_in:
             self.logged_in = True
             self.current_tab = "home"
-            return "Successfully logged in as " + \
-                   str(self.driver.find_element_by_id("lblUserName").get_attribute("innerHTML")).title()
+            return True, "Successfully logged in as *" + \
+                   str(self.driver.find_element_by_id("lblUserName").get_attribute("innerHTML")).title() + "*"
         else:
             self.current_tab = "asked for username"
             self.username = None
             self.password = None
-            return 'Incorrect username or password.\n\nPlease enter your username'
+            return False, 'Incorrect username or password.\n\nPlease re-enter your username'
 
     def perform_action(self, command):
         self.last_time_stamp = time.time()
@@ -51,13 +51,13 @@ class User:
 
     def close_driver(self):
         print time.time() - self.last_time_stamp
-        if time.time() - self.last_time_stamp >= 120:
+        if time.time() - self.last_time_stamp >= 180:
             self.logged_in = False
             self.driver.close()
             self.driver = None
         else:
             self.driver.refresh()
-            Timer(300.0, self.close_driver).start()
+            Timer(450.0, self.close_driver).start()
 
     def end_session(self):
         self.driver = None

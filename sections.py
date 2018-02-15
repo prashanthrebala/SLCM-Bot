@@ -1,14 +1,15 @@
 from bs4 import BeautifulSoup as bs
-import time
-import re
-import string_utils
-from pprint import pprint
 from string_utils import subject_title
+from bot_responses import invalid_command
 
-days = {0: 'Monday', 1: 'Tuesday', 2: 'Wednesday', 3: 'Thursday', 4: 'Friday', 5: 'Saturday', 6: 'Sunday',
-        'Monday': 0, 'Tuesday': 1, 'Wednesday': 2, 'Thursday': 3, 'Friday': 4, 'Saturday': 5, 'Sunday': 6}
+import string_utils
+import time
+
 
 roman = {1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII', 8: 'VIII'}
+
+
+""" UTILITY FUNCTIONS """
 
 
 def bunks_to_seventy_five(a, b):
@@ -29,19 +30,14 @@ def v(string):
 
 def perform_action(user, command):
     command = str(command)
-    print command.isdigit()
     if command in tabs:
         return tabs[command](user)
     elif command.isdigit():
         try:
-            # return user.temporary_utils[user.current_tab][int(command)]
-            print "in perform action"
             return tabs[user.current_tab](user, command)
-        except Exception as err:
-            print err, "in perform action"
+        except Exception:
             pass
-    print "not command and not digit"
-    return "Please enter a valid command"
+    return invalid_command
 
 
 """ PAGE NAVIGATION """
@@ -61,37 +57,6 @@ def go_to_grade_sheets(driver):
     return
 
 
-def timetable(driver):
-    print "here"
-    go_to_timetable(driver)
-    tt = bs(driver.page_source, "html.parser").find_all('table')[6]
-    day_classes = tt.find_all("div", class_="fc-content-col")
-    ans = ""
-    for i in range(len(day_classes)):
-        ans += "**" + days[i] + "**:\n"
-        for period in day_classes[i].find_all("div", class_="fc-content"):
-            ans += period.span.string + " -- " \
-                  + subject_title(period.find_all("div", class_="fc-title")[0].string.split(", Section")[0]) + "\n"
-    ans += "\n"
-    # print ans
-    return str(ans), "timetable"
-
-
-def go_to_basic_details(driver):
-    driver.get("http://slcm.manipal.edu/Academics.aspx")
-    time.sleep(1)
-    soup = bs(driver.page_source, "html.parser")
-    table_contents = soup.find_all("ul")[8].find_all("label")
-    basic_details = {}
-    previous_key = None
-    for element in table_contents:
-        if element.string is None:
-            basic_details[previous_key] = element.span.string
-        else:
-            previous_key = element.string
-    return basic_details
-
-
 """ ATTENDANCE """
 
 
@@ -103,7 +68,6 @@ def attendance(user, command=None):
     if command is None:
         return user.temporary_utils["attendance"]["menu"]
     else:
-        print "here in attendance"
         return user.temporary_utils["attendance"][int(command)]
 
 
@@ -152,7 +116,7 @@ def gradesheet(user, command=None):
     if command is not None:
         total_sems = change_grade_sheet_semester(user, command)
         if int(command) > total_sems:
-            return "Please enter a valid command"
+            return invalid_command
     else:
         total_sems = change_grade_sheet_semester(user, 0)
     soup = bs(user.driver.page_source, "html.parser")
@@ -181,7 +145,6 @@ def gradesheet(user, command=None):
     user.temporary_utils["gradesheet"][current_sem] = ans
     if command is None:
         ans += ":::" + user.temporary_utils["gradesheet"]["menu"]
-    print "went all the way lol"
     return ans
 
 
@@ -268,10 +231,12 @@ def scrape_marks(user):
         menu += "/" + str(index) + " " + subject_name + "\n"
         index += 1
     if sessional1_total != 0:
+        sessional1 += "*" + v(sessional1_score) + "/" + v(sessional1_total) + "*\n"
         marks_map[index] = sessional1
         menu += "/" + str(index) + " Sessional 1\n"
         index += 1
     if sessional2_total != 0:
+        sessional2 += "*" + v(sessional2_score) + "/" + v(sessional2_total) + "*\n"
         marks_map[index] = sessional2
         menu += "/" + str(index) + " Sessional 2\n"
         index += 1
@@ -279,11 +244,57 @@ def scrape_marks(user):
     user.temporary_utils["marks"] = marks_map
 
 
-def logout(user):
-    # user.current_tab = "logout"
-    # user.temporary_utils["logout"]["menu"] = "Are you sure you want to log out?\n/1 Yes\n/2 No\n"
-    # user.end_session()
-    print "lol it does nothing yet"
+def logout(user, command=None):
+    user.current_tab = "logout"
+    if command is None:
+        return "Are you sure you want to logout?\n/1 Yes\n/2 No"
+    if int(command) == 1:
+        return "Successfully logged out"
+    else:
+        user.current_tab = "home"
+        return "Kewl"
+
+
+tabs = {
+            'attendance': attendance,
+            'marks': marks,
+            'logout': logout,
+            'gradesheet': gradesheet
+    }
+
+
+""" UNUSED FUNCTIONS """
+
+
+def timetable(driver):
+    print "here"
+    go_to_timetable(driver)
+    tt = bs(driver.page_source, "html.parser").find_all('table')[6]
+    day_classes = tt.find_all("div", class_="fc-content-col")
+    ans = ""
+    for i in range(len(day_classes)):
+        ans += "**" + days[i] + "**:\n"
+        for period in day_classes[i].find_all("div", class_="fc-content"):
+            ans += period.span.string + " -- " \
+                  + subject_title(period.find_all("div", class_="fc-title")[0].string.split(", Section")[0]) + "\n"
+    ans += "\n"
+    # print ans
+    return str(ans), "timetable"
+
+
+def go_to_basic_details(driver):
+    driver.get("http://slcm.manipal.edu/Academics.aspx")
+    time.sleep(1)
+    soup = bs(driver.page_source, "html.parser")
+    table_contents = soup.find_all("ul")[8].find_all("label")
+    basic_details = {}
+    previous_key = None
+    for element in table_contents:
+        if element.string is None:
+            basic_details[previous_key] = element.span.string
+        else:
+            previous_key = element.string
+    return basic_details
 
 
 def go_to_course_details(driver):
@@ -351,14 +362,3 @@ def get_grade_details(driver, n):
 
     for x, y in values:
         print subject_title(x) + ":", y
-
-
-tabs = {
-
-        'attendance': attendance,
-        'marks': marks,
-        # 'timetable': timetable,
-        # 'logout': logout
-        'gradesheet': gradesheet
-
-    }

@@ -22,5 +22,5 @@ def handle(msg):
 def flush():
     bot = telepot.Bot('441669105:AAH3Brfz_jw0np86aPv7AKgPzOA6kzkb4fs')
     MessageLoop(bot, handle).run_as_thread()
-    
+flush()
 """

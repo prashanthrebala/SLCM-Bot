@@ -1,6 +1,7 @@
 from pprint import pprint
 from user import User
 
+import bot_responses
 import json
 import requests
 import message_handler
@@ -50,22 +51,36 @@ def echo_all(updates):
     global USERS
     for update in updates["result"]:
         try:
-            reply = None
             chat_id = update["message"]["chat"]["id"]
             if chat_id != 438683844:
                 continue
             if chat_id not in USERS:
-                # send_message(chat_id, "Hi! This is SLCM Bot.")
+                send_message(chat_id, "Hi! This is SLCM Bot.")
                 USERS[chat_id] = User()
             current_user = USERS[chat_id]
+
+            if 'text' not in update["message"]:
+                send_message(chat_id, 'Please enter a valid command')
+                continue
+
+            text = update["message"]["text"]
+            db_edit, reply = message_handler.handle(text, current_user)
+
+            for each_reply in reply.split(":::"):
+                send_message(chat_id, urllib.quote_plus(each_reply.strip().encode("utf8")))
+
+            if db_edit:
+                if reply == bot_responses.new_user_login:
+                    logged_in, reply = current_user.begin_session()
+                    if logged_in:
+                        print "Add items to database"
+                    send_message(chat_id, reply)
+
             # if current_user.current_tab == "new user":
             #     current_user.current_tab = "asked for username"
-            #     send_message(chat_id, 'Enter your registration.')
+            #     send_message(chat_id, 'Enter your registration number.')
             #     continue
-            # if 'text' not in update["message"]:
-            #     send_message(chat_id, 'Please enter a valid command')
-            #     continue
-            text = update["message"]["text"]
+
             # if current_user.current_tab == "asked for username":
             #     current_user.username = text
             #     current_user.current_tab = "asked for password"
@@ -77,16 +92,14 @@ def echo_all(updates):
             #     reply = "..."
             #     send_message(chat_id, 'It is recommended that you delete your password for your own privacy.')
 
-            if not current_user.logged_in:
-                current_user.username = prashanth.username
-                current_user.password = prashanth.password
-                reply = "."
-                send_message(chat_id, 'Please wait while we are logging you in...')
-                send_message(chat_id, current_user.begin_session())
-            if reply is None:
-                reply = message_handler.handle(text, current_user)
-                for each_reply in reply.split(":::"):
-                    send_message(chat_id, urllib.quote_plus(each_reply.strip().encode("utf8")))
+            # if not current_user.logged_in:
+            #     current_user.username = prashanth.username
+            #     current_user.password = prashanth.password
+            #     reply = "."
+            #     send_message(chat_id, 'Please wait while we are logging you in...')
+            #     send_message(chat_id, current_user.begin_session())
+            # if reply is None:
+
         except Exception as err:
             print err
 

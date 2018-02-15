@@ -54,6 +54,7 @@ class User:
         if time.time() - self.last_time_stamp >= 120:
             self.logged_in = False
             self.driver.close()
+            self.driver = None
         else:
             self.driver.refresh()
             Timer(300.0, self.close_driver).start()

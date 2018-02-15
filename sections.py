@@ -3,6 +3,7 @@ import time
 import re
 import string_utils
 from pprint import pprint
+from string_utils import subject_title
 
 days = {0: 'Monday', 1: 'Tuesday', 2: 'Wednesday', 3: 'Thursday', 4: 'Friday', 5: 'Saturday', 6: 'Sunday',
         'Monday': 0, 'Tuesday': 1, 'Wednesday': 2, 'Thursday': 3, 'Friday': 4, 'Saturday': 5, 'Sunday': 6}
@@ -70,7 +71,7 @@ def timetable(driver):
         ans += "**" + days[i] + "**:\n"
         for period in day_classes[i].find_all("div", class_="fc-content"):
             ans += period.span.string + " -- " \
-                  + string_utils.pascal_case(period.find_all("div", class_="fc-title")[0].string.split(", Section")[0]) + "\n"
+                  + subject_title(period.find_all("div", class_="fc-title")[0].string.split(", Section")[0]) + "\n"
     ans += "\n"
     # print ans
     return str(ans), "timetable"
@@ -115,7 +116,7 @@ def get_attendance(user):
     all = ""
     for subject in table.find_all('tr'):
         cells = subject.find_all('td')
-        sub = string_utils.pascal_case(cells[2].string)
+        sub = subject_title(cells[2].string)
         ans = ""
         ans += "*" + sub + "*\n"
         ans += "Attended: " + cells[5].string + "\n"
@@ -165,7 +166,7 @@ def gradesheet(user, command=None):
     for sub in subjects:
         x = sub.find_all("td")[2:4]
         name, grade = x[0].span.string, x[1].span.string
-        ans += string_utils.pascal_case(str(name)) + ": *" + str(grade) + "*\n"
+        ans += subject_title(str(name)) + ": *" + str(grade) + "*\n"
 
     if "menu" not in user.temporary_utils["gradesheet"]:
         menu = ""
@@ -227,12 +228,13 @@ def scrape_marks(user):
     sessional2_total = 0
     index = 1
     for subject in divs:
-        subject_name = string_utils.pascal_case(string_utils.extract_subject_name(subject.h4.text))
+        subject_name = subject_title(string_utils.extract_subject_name(subject.h4.text))
         if " Lab" == subject_name[-4:]:
             continue
         s1 = 0.0
         s2 = 0.0
         am = 0.0
+        tl = 0.0
         ans = "*" + subject_name + "*\n"
         tables = subject.find_all("tbody")
         for table in tables:
@@ -241,23 +243,27 @@ def scrape_marks(user):
                 for row in rows[1:-1]:
                     cols = row.find_all("td")
                     if "Sessional 1" in str(cols[0].string):
-                        ans += "Sessional 1: " + v(cols[2].string) + " / " + v(cols[1].string) + "\n"
+                        ans += "Sessional 1: *" + v(cols[2].string) + "/" + v(cols[1].string) + "*\n"
                         s1 += float(cols[2].string)
                         sessional1_score += float(cols[2].string)
                         sessional1_total += float(cols[1].string)
-                        sessional1 += subject_name + ": " + v(cols[2].string) + " / " + v(cols[1].string) + "\n"
+                        sessional1 += subject_name + ": *" + v(cols[2].string) + "/" + v(cols[1].string) + "*\n"
+                        tl += float(cols[1].string)
                     elif "Sessional 2" in str(cols[0].string):
-                        ans += "Sessional 2: " + v(cols[2].string) + " / " + v(cols[1].string) + "\n"
+                        ans += "Sessional 2: *" + v(cols[2].string) + "/" + v(cols[1].string) + "*\n"
                         s2 += float(cols[2].string)
                         sessional2_score += float(cols[2].string)
                         sessional2_total += float(cols[1].string)
-                        sessional2 += subject_name + ": " + v(cols[2].string) + " / " + v(cols[1].string) + "\n"
+                        sessional2 += subject_name + ": *" + v(cols[2].string) + "/" + v(cols[1].string) + "*\n"
+                        tl += float(cols[1].string)
             elif str(rows[0].th.string) == "Assignment":
                 for row in rows[1:-1]:
                     cols = row.find_all("td")
-                    ans += str(cols[0].string) + ": " + v(cols[2].string) + " / " + v(cols[1].string) + "\n"
+                    ans += str(cols[0].string) + ": *" + v(cols[2].string) + "/" + v(cols[1].string) + "*\n"
                     am += float(cols[2].string)
-        ans += "Total: " + str(s1 + s2 + am) + "\n"
+                    tl += float(cols[1].string)
+        if s1 + s2 + am > 0:
+            ans += "Total: *" + v(s1 + s2 + am) + "/" + v(tl) + "*\n"
         marks_map[index] = ans
         menu += "/" + str(index) + " " + subject_name + "\n"
         index += 1
@@ -271,7 +277,6 @@ def scrape_marks(user):
         index += 1
     marks_map["menu"] = menu
     user.temporary_utils["marks"] = marks_map
-
 
 
 def logout(user):
@@ -310,7 +315,7 @@ def semester_details(driver, n, current_tab):
     should_print = False
     for tag in table.tbody.find_all('td'):
         if should_print:
-            ret.append(string_utils.pascal_case(tag.string))
+            ret.append(subject_title(tag.string))
             should_print = False
         if len(subject_code.findall(str(tag))) > 0:
             should_print = True
@@ -324,7 +329,7 @@ def get_timetable(driver):
         print days[i] + ": "
         for period in days_tt[i].find_all("div", class_="fc-content"):
             print "\t" + period.span.string + "  -->  " \
-                + string_utils.pascal_case(period.find_all("div", class_="fc-title")[0].string.split(", Section")[0])
+                + subject_title(period.find_all("div", class_="fc-title")[0].string.split(", Section")[0])
 
 
 def get_grade_details(driver, n):
@@ -345,7 +350,7 @@ def get_grade_details(driver, n):
         values.append((name, grade))
 
     for x, y in values:
-        print string_utils.pascal_case(x) + ":", y
+        print subject_title(x) + ":", y
 
 
 tabs = {
